@@ -17,26 +17,16 @@ import (
 )
 
 func main() {
-	seed := flag.Uint64("seed", 0, "random seed for the piece sequence (0 picks one from the clock)")
-	level := flag.Int("level", 0, fmt.Sprintf("start level shown on the title screen (0-%d)", game.MaxStartLevel))
 	noGrid := flag.Bool("nogrid", false, "draw solid blocks without grid lines (for terminals that don't show underlines)")
 	flag.Parse()
 
-	if *level < 0 || *level > game.MaxStartLevel {
-		fmt.Fprintf(os.Stderr, "tetris: -level must be between 0 and %d\n", game.MaxStartLevel)
-		os.Exit(2)
-	}
-	if *seed == 0 {
-		*seed = uint64(time.Now().UnixNano())
-	}
-
-	if err := run(*seed, *level, ui.Options{NoGrid: *noGrid}); err != nil {
+	if err := run(ui.Options{NoGrid: *noGrid}); err != nil {
 		fmt.Fprintln(os.Stderr, "tetris:", err)
 		os.Exit(1)
 	}
 }
 
-func run(seed uint64, level int, opts ui.Options) error {
+func run(opts ui.Options) error {
 	screen, err := tcell.NewScreen()
 	if err != nil {
 		return err
@@ -44,9 +34,9 @@ func run(seed uint64, level int, opts ui.Options) error {
 	if err := screen.Init(); err != nil {
 		return err
 	}
-	// Always give the terminal back, even if the game panics; otherwise the
-	// shell is left in raw mode and the panic message is unreadable.
 	defer func() {
+		// Always give the terminal back, even if the game panics
+		// otherwise the shell is left in raw mode and the panic message is unreadable.
 		r := recover()
 		var stack []byte
 		if r != nil {
@@ -64,7 +54,8 @@ func run(seed uint64, level int, opts ui.Options) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
+	seed := uint64(time.Now().UnixNano())
 	g := game.New(game.NewNESRandomizer(seed))
-	g.SetStartLevel(level)
+	g.SetStartLevel(0)
 	return ui.Run(ctx, screen, g, opts)
 }

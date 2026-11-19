@@ -1,6 +1,3 @@
-// Package game holds the rules of the game. It knows nothing about terminals
-// or wall-clock time: callers drive it one frame at a time with Tick and feed
-// it player input with Handle.
 package game
 
 // Kind identifies a tetromino. The zero value is an empty board cell.

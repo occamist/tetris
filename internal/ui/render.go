@@ -4,6 +4,7 @@ package ui
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
@@ -33,6 +34,7 @@ type UI struct {
 	screen tcell.Screen
 	look   look
 	ghost  bool // draw the landing preview
+	help   bool // show the key help popup instead of the board
 
 	ox, oy int // top-left corner of the layout
 }
@@ -54,6 +56,12 @@ func New(screen tcell.Screen, opts Options) *UI {
 // ToggleGhost turns the landing preview on or off.
 func (u *UI) ToggleGhost() { u.ghost = !u.ghost }
 
+// ToggleHelp opens or closes the key help popup.
+func (u *UI) ToggleHelp() { u.help = !u.help }
+
+// HelpOpen reports whether the help popup is showing.
+func (u *UI) HelpOpen() bool { return u.help }
+
 // Draw redraws the whole screen for the current game state.
 func (u *UI) Draw(g *game.Game) {
 	s := u.screen
@@ -70,6 +78,8 @@ func (u *UI) Draw(g *game.Game) {
 	u.drawPanel(g)
 
 	switch {
+	case u.help:
+		u.drawHelp()
 	case g.Phase() == game.PhaseStart:
 		u.drawTitle(g)
 	case g.Paused():
@@ -148,13 +158,11 @@ func (u *UI) cell(row, col int, glyph string, style tcell.Style) {
 }
 
 func (u *UI) drawBoard(g *game.Game) {
-	board := g.Board()
+	board := g.Board
 	clearRows, pairs := g.Clearing()
 	wiped := func(row, col int) bool {
-		for _, r := range clearRows {
-			if r == row {
-				return col >= game.Width/2-pairs && col < game.Width/2+pairs
-			}
+		if slices.Contains(clearRows, row) {
+			return col >= game.Width/2-pairs && col < game.Width/2+pairs
 		}
 		return false
 	}
@@ -195,7 +203,7 @@ func (u *UI) drawPanel(g *game.Game) {
 	const boxW, boxH = 4*2 + 2, 2 + 2
 	u.drawBox(x, y+1, x+boxW-1, y+boxH)
 	if g.Phase() != game.PhaseStart && !g.Paused() {
-		next := game.NewPiece(g.Next())
+		next := game.NewPiece(g.NextKind)
 		style, glyph := u.blockStyle(next.Kind)
 		for _, p := range next.Cells() {
 			// Spawn cells sit in rows 0-1 and columns SpawnCol-2..SpawnCol+1.
@@ -204,32 +212,49 @@ func (u *UI) drawPanel(g *game.Game) {
 	}
 
 	u.text(x, y+6, "SCORE", styleTitle)
-	u.text(x, y+7, fmt.Sprintf("%06d", g.Score()), styleText)
+	u.text(x, y+7, fmt.Sprintf("%06d", g.Score), styleText)
 	u.text(x, y+9, "LINES", styleTitle)
-	u.text(x, y+10, fmt.Sprintf("%03d", g.Lines()), styleText)
+	u.text(x, y+10, fmt.Sprintf("%03d", g.Lines), styleText)
 	u.text(x, y+12, "LEVEL", styleTitle)
-	u.text(x, y+13, fmt.Sprintf("%02d", g.Level()), styleText)
+	u.text(x, y+13, fmt.Sprintf("%02d", g.Level), styleText)
 
-	help := []string{
-		"← →  move",
-		"↑ x  rotate ↻",
-		"z    rotate ↺",
-		"↓    soft drop",
-		"spc  hard drop",
-		"p g  pause/ghost",
-		"q    quit",
+	u.text(x, y+15, "?  help", styleBorder)
+}
+
+// helpLines lists the key bindings shown in the help popup.
+var helpLines = []string{
+	"← →  move",
+	"↑ x  rotate ↻",
+	"z    rotate ↺",
+	"↓    soft drop",
+	"spc  hard drop",
+	"p    pause",
+	"g    ghost",
+	"q    quit",
+}
+
+// drawHelp shows the key bindings in place of the board. The game is frozen
+// while it is open, so hiding the board gives no advantage.
+func (u *UI) drawHelp() {
+	u.centre(3, "HELP", styleTitle)
+	// Centre the block as a whole so the key column stays aligned.
+	width := 0
+	for _, l := range helpLines {
+		width = max(width, runewidth.StringWidth(l))
 	}
-	for i, l := range help {
-		u.text(x, y+15+i, l, styleBorder)
+	x := u.ox + 1 + (boardW-2-width)/2
+	for i, l := range helpLines {
+		u.text(x, u.oy+1+5+i, l, styleText)
 	}
+	u.centre(15, "any key to close", styleBorder)
 }
 
 func (u *UI) drawTitle(g *game.Game) {
 	u.centre(5, "T E T R I S", styleTitle)
 	u.centre(9, "START LEVEL", styleText)
-	u.centre(10, fmt.Sprintf("◀  %02d  ▶", g.StartLevel()), styleTitle)
-	u.centre(13, "↑ ↓  choose", styleBorder)
-	u.centre(14, "enter  start", styleBorder)
+	u.centre(10, fmt.Sprintf("◀  %02d  ▶", g.StartLevel), styleTitle)
+	u.centre(13, "↑ ↓ to choose", styleBorder)
+	u.centre(14, "enter to start", styleBorder)
 }
 
 func (u *UI) drawGameOver(g *game.Game) {
@@ -242,9 +267,9 @@ func (u *UI) drawGameOver(g *game.Game) {
 		{8, "GAME OVER", styleTitle},
 		{9, "", styleText},
 		{10, "SCORE", styleText},
-		{11, fmt.Sprintf("%06d", g.Score()), styleTitle},
+		{11, fmt.Sprintf("%06d", g.Score), styleTitle},
 		{12, "", styleText},
-		{13, "enter  continue", styleBorder},
+		{13, "enter to continue", styleBorder},
 		{14, "", styleText},
 	}
 	for _, l := range lines {

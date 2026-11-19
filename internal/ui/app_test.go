@@ -13,7 +13,7 @@ import (
 
 type sequence struct{ kinds []game.Kind }
 
-func (s *sequence) Next() game.Kind {
+func (s *sequence) NextKind() game.Kind {
 	k := s.kinds[0]
 	if len(s.kinds) > 1 {
 		s.kinds = s.kinds[1:]
@@ -84,6 +84,7 @@ func TestMapKey(t *testing.T) {
 		{"Z", tcell.NewEventKey(tcell.KeyRune, 'Z', 0), cmdGame, game.ActionRotateCCW},
 		{"p", tcell.NewEventKey(tcell.KeyRune, 'p', 0), cmdGame, game.ActionPause},
 		{"g", tcell.NewEventKey(tcell.KeyRune, 'g', 0), cmdGhost, 0},
+		{"?", tcell.NewEventKey(tcell.KeyRune, '?', 0), cmdHelp, 0},
 		{"q", tcell.NewEventKey(tcell.KeyRune, 'q', 0), cmdQuit, 0},
 		{"esc", tcell.NewEventKey(tcell.KeyEscape, 0, 0), cmdQuit, 0},
 		{"ctrl-c", tcell.NewEventKey(tcell.KeyCtrlC, 0, tcell.ModCtrl), cmdQuit, 0},
@@ -203,6 +204,58 @@ func TestDrawPausedHidesBoard(t *testing.T) {
 	}
 	if got := boardCell(rows, 0, 4); got != "  " {
 		t.Errorf("board visible while paused: %q", got)
+	}
+}
+
+func TestHelpPopup(t *testing.T) {
+	s := newScreen(t, MinCols, MinRows)
+	g := game.New(&sequence{kinds: []game.Kind{game.O}})
+	g.Handle(game.ActionStart)
+	u := New(s, Options{})
+
+	u.Draw(g)
+	rows := screenText(s)
+	if contains(rows, "hard drop") {
+		t.Error("key help shown without opening the popup")
+	}
+	if !contains(rows, "?  help") {
+		t.Error("panel hint for ? missing")
+	}
+
+	u.ToggleHelp()
+	u.Draw(g)
+	rows = screenText(s)
+	for _, want := range []string{"HELP", "move", "rotate ↻", "rotate ↺", "soft drop", "hard drop", "pause", "ghost", "quit"} {
+		if !contains(rows, want) {
+			t.Errorf("help popup missing %q:\n%s", want, strings.Join(rows, "\n"))
+		}
+	}
+	if got := boardCell(rows, 0, 4); got != "  " {
+		t.Errorf("board visible behind help: %q", got)
+	}
+}
+
+func TestRunHelpFreezesGame(t *testing.T) {
+	s := newScreen(t, MinCols, MinRows)
+	g := game.New(&sequence{kinds: []game.Kind{game.O}})
+	g.Handle(game.ActionStart)
+	done := make(chan error, 1)
+	go func() { done <- Run(context.Background(), s, g, Options{}) }()
+
+	s.InjectKey(tcell.KeyRune, '?', 0)
+	time.Sleep(100 * time.Millisecond)
+	// Escape closes the popup instead of quitting.
+	s.InjectKey(tcell.KeyEscape, 0, 0)
+	select {
+	case <-done:
+		t.Fatal("escape quit the game while help was open")
+	case <-time.After(100 * time.Millisecond):
+	}
+	s.InjectKey(tcell.KeyRune, 'q', 0)
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Run did not return after q")
 	}
 }
 

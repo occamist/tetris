@@ -8,7 +8,7 @@ import (
 // sequence hands out the given kinds in order, then repeats the last one.
 type sequence struct{ kinds []Kind }
 
-func (s *sequence) Next() Kind {
+func (s *sequence) NextKind() Kind {
 	k := s.kinds[0]
 	if len(s.kinds) > 1 {
 		s.kinds = s.kinds[1:]
@@ -49,24 +49,24 @@ func TestTitleScreenLevelSelect(t *testing.T) {
 		t.Fatalf("new game phase = %v, want PhaseStart", g.Phase())
 	}
 	g.Handle(ActionDown)
-	if g.StartLevel() != 0 {
-		t.Errorf("level went below 0: %d", g.StartLevel())
+	if g.StartLevel != 0 {
+		t.Errorf("level went below 0: %d", g.StartLevel)
 	}
 	g.Handle(ActionUp)
 	g.Handle(ActionRight)
-	if g.StartLevel() != 2 {
-		t.Errorf("start level = %d, want 2", g.StartLevel())
+	if g.StartLevel != 2 {
+		t.Errorf("start level = %d, want 2", g.StartLevel)
 	}
 	g.SetStartLevel(50)
-	if g.StartLevel() != MaxStartLevel {
-		t.Errorf("start level = %d, want clamp to %d", g.StartLevel(), MaxStartLevel)
+	if g.StartLevel != MaxStartLevel {
+		t.Errorf("start level = %d, want clamp to %d", g.StartLevel, MaxStartLevel)
 	}
 	g.Handle(ActionStart)
-	if g.Phase() != PhasePlay || g.Level() != MaxStartLevel {
-		t.Errorf("after start: phase %v level %d", g.Phase(), g.Level())
+	if g.Phase() != PhasePlay || g.Level != MaxStartLevel {
+		t.Errorf("after start: phase %v level %d", g.Phase(), g.Level)
 	}
 	g.SetStartLevel(0)
-	if g.StartLevel() != MaxStartLevel {
+	if g.StartLevel != MaxStartLevel {
 		t.Error("SetStartLevel changed the level during play")
 	}
 }
@@ -76,8 +76,8 @@ func TestStartSpawnsFirstPieceAndPreview(t *testing.T) {
 	if p := mustPiece(t, g); p != NewPiece(T) {
 		t.Errorf("first piece = %+v, want T at spawn", p)
 	}
-	if g.Next() != L {
-		t.Errorf("next = %v, want L", g.Next())
+	if g.NextKind != L {
+		t.Errorf("next = %v, want L", g.NextKind)
 	}
 }
 
@@ -153,8 +153,8 @@ func TestSoftDropResetsGravityWithoutScoring(t *testing.T) {
 	g := started(0, T)
 	ticks(g, 40)
 	g.Handle(ActionDown)
-	if mustPiece(t, g).Row != SpawnRow+1 || g.Score() != 0 {
-		t.Fatalf("soft drop: row %d score %d", mustPiece(t, g).Row, g.Score())
+	if mustPiece(t, g).Row != SpawnRow+1 || g.Score != 0 {
+		t.Fatalf("soft drop: row %d score %d", mustPiece(t, g).Row, g.Score)
 	}
 	ticks(g, FramesPerRow(0)-1)
 	if mustPiece(t, g).Row != SpawnRow+1 {
@@ -166,10 +166,10 @@ func TestHardDropLocksWithoutScoringAndWaitsEntryDelay(t *testing.T) {
 	g := started(0, O, T)
 	g.Handle(ActionHardDrop)
 	// Only cleared lines score; dropping alone gives nothing.
-	if g.Score() != 0 {
-		t.Errorf("hard drop score = %d, want 0", g.Score())
+	if g.Score != 0 {
+		t.Errorf("hard drop score = %d, want 0", g.Score)
 	}
-	b := g.Board()
+	b := g.Board
 	if b[19][4] != O || b[18][5] != O {
 		t.Error("O was not locked at the bottom")
 	}
@@ -188,7 +188,7 @@ func TestHardDropLocksWithoutScoringAndWaitsEntryDelay(t *testing.T) {
 
 func TestLineClear(t *testing.T) {
 	g := started(0, I, O)
-	fillRow(&g.board, 19, J, 3, 4, 5, 6) // gap exactly where a flat I lands
+	fillRow(&g.Board, 19, J, 3, 4, 5, 6) // gap exactly where a flat I lands
 	g.Handle(ActionHardDrop)
 
 	if g.Phase() != PhaseLineClear {
@@ -211,13 +211,13 @@ func TestLineClear(t *testing.T) {
 	if g.Phase() != PhasePlay {
 		t.Fatalf("phase after animation = %v, want PhasePlay", g.Phase())
 	}
-	if g.Lines() != 1 {
-		t.Errorf("lines = %d, want 1", g.Lines())
+	if g.Lines != 1 {
+		t.Errorf("lines = %d, want 1", g.Lines)
 	}
-	if want := LineScore(0, 1); g.Score() != want {
-		t.Errorf("score = %d, want %d", g.Score(), want)
+	if want := LineScore(0, 1); g.Score != want {
+		t.Errorf("score = %d, want %d", g.Score, want)
 	}
-	if g.Board() != (Board{}) {
+	if g.Board != (Board{}) {
 		t.Error("board not empty after clearing the only row")
 	}
 	if p := mustPiece(t, g); p.Kind != O {
@@ -227,9 +227,9 @@ func TestLineClear(t *testing.T) {
 
 func TestFourLineClearAndLevelUp(t *testing.T) {
 	g := started(0, I, O)
-	g.lines = 9
+	g.Lines = 9
 	for r := 16; r < Height; r++ {
-		fillRow(&g.board, r, L, 0)
+		fillRow(&g.Board, r, L, 0)
 	}
 	g.Handle(ActionRotateCW) // vertical I, cells rows -2..1 at pivot col 5
 	for range 5 {
@@ -241,20 +241,20 @@ func TestFourLineClearAndLevelUp(t *testing.T) {
 	g.Handle(ActionHardDrop)
 	ticks(g, LineClearFrames)
 
-	if g.Lines() != 13 {
-		t.Errorf("lines = %d, want 13", g.Lines())
+	if g.Lines != 13 {
+		t.Errorf("lines = %d, want 13", g.Lines)
 	}
-	if g.Level() != 1 {
-		t.Errorf("level = %d, want 1 after passing 10 lines", g.Level())
+	if g.Level != 1 {
+		t.Errorf("level = %d, want 1 after passing 10 lines", g.Level)
 	}
-	if want := LineScore(0, 4); g.Score() != want {
-		t.Errorf("score = %d, want %d (scored at the old level)", g.Score(), want)
+	if want := LineScore(0, 4); g.Score != want {
+		t.Errorf("score = %d, want %d (scored at the old level)", g.Score, want)
 	}
 }
 
 func TestGameOverWhenSpawnBlocked(t *testing.T) {
 	g := started(0, O, T)
-	g.board[0][6] = Z // clear of the falling O, but where T spawns
+	g.Board[0][6] = Z // clear of the falling O, but where T spawns
 	g.Handle(ActionHardDrop)
 	ticks(g, EntryDelay(18))
 	if g.Phase() != PhaseOver {
@@ -271,7 +271,7 @@ func TestGameOverWhenSpawnBlocked(t *testing.T) {
 
 func TestGameOverWhenLockingAboveTop(t *testing.T) {
 	g := started(0, I)
-	g.board[2][5] = Z
+	g.Board[2][5] = Z
 	g.Handle(ActionRotateCW) // vertical I: rows -2..1, resting on the Z
 	g.Handle(ActionHardDrop)
 	if g.Phase() != PhaseOver {
@@ -300,19 +300,19 @@ func TestPauseFreezesGame(t *testing.T) {
 
 func TestRestartResetsState(t *testing.T) {
 	g := started(3, O)
-	g.score, g.lines, g.level = 999, 40, 7
-	g.board[19][0] = J
+	g.Score, g.Lines, g.Level = 999, 40, 7
+	g.Board[19][0] = J
 	g.phase = PhaseOver
 	g.Handle(ActionStart) // to title
 	g.Handle(ActionStart) // new game
-	if g.Score() != 0 || g.Lines() != 0 || g.Level() != 3 || g.Board() != (Board{}) {
-		t.Errorf("restart kept old state: score %d lines %d level %d", g.Score(), g.Lines(), g.Level())
+	if g.Score != 0 || g.Lines != 0 || g.Level != 3 || g.Board != (Board{}) {
+		t.Errorf("restart kept old state: score %d lines %d level %d", g.Score, g.Lines, g.Level)
 	}
 }
 
 func TestGhost(t *testing.T) {
 	g := started(0, O)
-	g.board[10][4] = S
+	g.Board[10][4] = S
 	ghost, ok := g.Ghost()
 	if !ok {
 		t.Fatal("no ghost")

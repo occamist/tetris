@@ -25,22 +25,25 @@ const (
 	ActionPause                   // pause or resume
 )
 
-// Game is a single game session, from title screen to game over and back.
+type Randomizer interface {
+	NextKind() Kind
+}
+
 type Game struct {
 	rng Randomizer
 
 	phase  Phase
 	paused bool
-	board  Board
+	Board  Board
 
 	piece    Piece
 	hasPiece bool // false while waiting out the entry delay
-	next     Kind
+	NextKind Kind
 
-	startLevel int
-	level      int
-	lines      int
-	score      int
+	StartLevel int // The level chosen on the title screen.
+	Level      int // The current level in the game session.
+	Lines      int // Lines returns the number of lines cleared this game.
+	Score      int // The score in the game session.
 
 	gravityTimer int // frames since the piece last fell
 	entryTimer   int // frames left before the next piece appears
@@ -57,7 +60,7 @@ func New(rng Randomizer) *Game {
 // allowed range. It has no effect once a game is running.
 func (g *Game) SetStartLevel(level int) {
 	if g.phase == PhaseStart {
-		g.startLevel = max(0, min(MaxStartLevel, level))
+		g.StartLevel = max(0, min(MaxStartLevel, level))
 	}
 }
 
@@ -76,7 +79,7 @@ func (g *Game) Tick() {
 			return
 		}
 		g.gravityTimer++
-		if g.gravityTimer >= FramesPerRow(g.level) {
+		if g.gravityTimer >= FramesPerRow(g.Level) {
 			g.gravityTimer = 0
 			g.fall()
 		}
@@ -94,9 +97,9 @@ func (g *Game) Handle(a Action) {
 	case PhaseStart:
 		switch a {
 		case ActionUp, ActionRight:
-			g.SetStartLevel(g.startLevel + 1)
+			g.SetStartLevel(g.StartLevel + 1)
 		case ActionDown, ActionLeft:
-			g.SetStartLevel(g.startLevel - 1)
+			g.SetStartLevel(g.StartLevel - 1)
 		case ActionStart, ActionHardDrop:
 			g.begin()
 		}
@@ -133,31 +136,31 @@ func (g *Game) Handle(a Action) {
 
 // begin starts a new game at the chosen start level.
 func (g *Game) begin() {
-	g.board = Board{}
-	g.level = g.startLevel
-	g.lines = 0
-	g.score = 0
+	g.Board = Board{}
+	g.Level = g.StartLevel
+	g.Lines = 0
+	g.Score = 0
 	g.paused = false
 	g.clearing = nil
 	g.phase = PhasePlay
-	g.next = g.rng.Next()
+	g.NextKind = g.rng.NextKind()
 	g.spawn()
 }
 
 // spawn brings in the next piece. If it overlaps the stack, the game is over.
 func (g *Game) spawn() {
-	g.piece = NewPiece(g.next)
-	g.next = g.rng.Next()
+	g.piece = NewPiece(g.NextKind)
+	g.NextKind = g.rng.NextKind()
 	g.hasPiece = true
 	g.gravityTimer = 0
-	if !g.board.Fits(g.piece.Cells()) {
+	if !g.Board.Fits(g.piece.Cells()) {
 		g.phase = PhaseOver
 	}
 }
 
 // try moves the piece to p if it fits there.
 func (g *Game) try(p Piece) bool {
-	if !g.board.Fits(p.Cells()) {
+	if !g.Board.Fits(p.Cells()) {
 		return false
 	}
 	g.piece = p
@@ -179,11 +182,11 @@ func (g *Game) fall() bool {
 // waiting for the next piece.
 func (g *Game) lock() {
 	g.hasPiece = false
-	if !g.board.Place(g.piece) {
+	if !g.Board.Place(g.piece) {
 		g.phase = PhaseOver
 		return
 	}
-	if rows := g.board.FullRows(); len(rows) > 0 {
+	if rows := g.Board.FullRows(); len(rows) > 0 {
 		g.clearing = rows
 		g.clearTimer = 0
 		g.phase = PhaseLineClear
@@ -195,12 +198,12 @@ func (g *Game) lock() {
 // finishClear removes the cleared rows, scores them and spawns the next piece.
 func (g *Game) finishClear() {
 	n := len(g.clearing)
-	g.board.ClearRows(g.clearing)
+	g.Board.ClearRows(g.clearing)
 	g.clearing = nil
-	g.score += LineScore(g.level, n)
-	g.lines += n
-	if g.lines >= LinesForNextLevel(g.startLevel, g.level) {
-		g.level++
+	g.Score += LineScore(g.Level, n)
+	g.Lines += n
+	if g.Lines >= LinesForNextLevel(g.StartLevel, g.Level) {
+		g.Level++
 	}
 	g.phase = PhasePlay
 	g.spawn()
@@ -211,9 +214,6 @@ func (g *Game) Phase() Phase { return g.phase }
 
 // Paused reports whether the game is paused.
 func (g *Game) Paused() bool { return g.paused }
-
-// Board returns a copy of the locked cells.
-func (g *Game) Board() Board { return g.board }
 
 // Piece returns the falling piece, and false if there is none right now.
 func (g *Game) Piece() (Piece, bool) {
@@ -227,26 +227,11 @@ func (g *Game) Ghost() (Piece, bool) {
 	if !ok {
 		return Piece{}, false
 	}
-	for g.board.Fits(p.Moved(1, 0).Cells()) {
+	for g.Board.Fits(p.Moved(1, 0).Cells()) {
 		p = p.Moved(1, 0)
 	}
 	return p, true
 }
-
-// Next returns the kind of the upcoming piece.
-func (g *Game) Next() Kind { return g.next }
-
-// StartLevel returns the level chosen on the title screen.
-func (g *Game) StartLevel() int { return g.startLevel }
-
-// Level returns the current level.
-func (g *Game) Level() int { return g.level }
-
-// Lines returns the number of lines cleared this game.
-func (g *Game) Lines() int { return g.lines }
-
-// Score returns the score this game.
-func (g *Game) Score() int { return g.score }
 
 // Clearing returns the rows being wiped and how many column pairs have been
 // wiped so far, counting outwards from the centre (1 to Width/2).

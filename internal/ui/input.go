@@ -13,6 +13,7 @@ const (
 	cmdNone  command = iota // key is not bound
 	cmdGame                 // pass the action to the game
 	cmdGhost                // toggle the ghost piece
+	cmdHelp                 // open the help popup
 	cmdQuit                 // leave the program
 )
 
@@ -44,6 +45,8 @@ func mapKey(ev *tcell.EventKey) (command, game.Action) {
 			return cmdGame, game.ActionPause
 		case 'g', 'G':
 			return cmdGhost, 0
+		case '?':
+			return cmdHelp, 0
 		case 'q', 'Q':
 			return cmdQuit, 0
 		}

@@ -1,11 +1,30 @@
 # Tetris
 
-A falling-block puzzle game for the terminal, written in Go. The rules follow
+Tetris for the terminal written in Go and Tcell Go library. The rules follow
 the NES-era classic: same gravity speeds, scoring, level progression, piece
 randomizer and rotation, with a ghost piece and hard drop added on top.
 
-The board and pieces are drawn as a mesh of thin grid lines, in colour. The
-snapshot below is plain text, so it shows the `-nogrid` look:
+For original one that I have written manually by hand in C, do visit [tetris v1](https://github.com/occamist/tetris/tree/ae25cc05923464328a811e2291f46035dcf7b19c)
+
+> [!NOTE]
+> Grid lines use the block characters `▁` (U+2581) and `🭿` (U+1FB7F).
+> Terminals that draw block characters themselves line them up exactly with
+> the cell edges: GNOME Console/Terminal (VTE), kitty, WezTerm, foot, iTerm2.
+> Elsewhere they come from your font. If you see boxes or broken lines, run with `-nogrid`.
+
+## Installation
+
+### Grab Binaries
+
+You can find the binaries through GitHub [releases](https://github.com/occamist/tetris/releases/).
+
+### Install Via Go
+
+```shell
+  go install github.com/occamist/tetris/v2/cmd/tetris@latest
+```
+
+## Rules
 
 ```
  ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁   NEXT
@@ -23,63 +42,14 @@ snapshot below is plain text, so it shows the `-nogrid` look:
 ▕      ██████        ▏  LEVEL
 ▕          ██        ▏  00
 ▕          ██        ▏
-▕        ████        ▏  ← →  move
-▕        ██          ▏  ↑ x  rotate ↻
-▕      ██████        ▏  z    rotate ↺
-▕      ██  ██        ▏  ↓    soft drop
-▕        ████        ▏  spc  hard drop
-▕        ██          ▏  p g  pause/ghost
- ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔   q    quit
+▕        ████        ▏  ?  help
+▕        ██          ▏
+▕      ██████        ▏
+▕      ██  ██        ▏
+▕        ████        ▏
+▕        ██          ▏
+ ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
 ```
-
-## Requirements
-
-- Go
-- Grid lines use the block characters `▁` (U+2581) and `🭿` (U+1FB7F).
-  Terminals that draw block characters themselves line them up exactly with
-  the cell edges: GNOME Console/Terminal (VTE), kitty, WezTerm, foot, iTerm2.
-  Elsewhere they come from your font. If you see boxes or broken lines, run
-  with `-nogrid`.
-
-## Run
-
-```sh
-go run ./cmd/tetris
-```
-
-or install it onto your `PATH`:
-
-```sh
-go install github.com/occamist/tetris/v2/cmd/tetris@latest
-tetris
-```
-
-### Flags
-
-| Flag | Default | Meaning |
-|---|---|---|
-| `-level N` | `0` | Start level preselected on the title screen (0–19) |
-| `-seed N` | clock | Seed for the piece sequence. Use the same seed to replay the same pieces |
-| `-nogrid` | off | Draw solid blocks without grid lines |
-
-## Controls
-
-| Key | Title screen | In game |
-|---|---|---|
-| `←` `→` | Change start level | Move |
-| `↑` | Raise start level | Rotate clockwise |
-| `↓` | Lower start level | Soft drop one row |
-| `x` / `z` | | Rotate clockwise / counter-clockwise |
-| `space` | Start | Hard drop |
-| `enter` | Start | |
-| `p` | | Pause (the board is hidden while paused) |
-| `g` | | Toggle the ghost piece |
-| `q` / `esc` / `ctrl-c` | Quit | Quit |
-
-Terminals only report key presses, not releases, so holding a key repeats at
-your terminal's key-repeat rate.
-
-## Rules
 
 - **Board:** 10 × 20. A new piece appears at the top centre. If it overlaps
   the stack, or a piece locks partly above the top, the game is over.

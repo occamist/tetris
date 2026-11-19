@@ -1,14 +1,14 @@
 package game
 
-// FPS is the frame rate the rules are written for. Every timer in the game
-// counts frames at this rate, like the NES did.
-const FPS = 60
+const (
+	FPS = 60
 
-// MaxStartLevel is the highest level the title screen allows.
-const MaxStartLevel = 19
+	// MaxStartLevel is the highest level the title screen allows.
+	MaxStartLevel = 19
 
-// LineClearFrames is how long cleared rows are shown being wiped away.
-const LineClearFrames = 20
+	// LineClearFrames is how long cleared rows are shown being wiped away.
+	LineClearFrames = 20
+)
 
 // framesPerRow is the NES gravity table: how many frames a piece waits before
 // falling one row, indexed by level. Level 29 and above use 1.
