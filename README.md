@@ -1,46 +1,66 @@
+# Tetris
 
-# CLASSIC TETRIS
+Tetris for the terminal written in Go and Tcell Go library. The rules follow
+the NES-era classic: same gravity speeds, scoring, level progression, piece
+randomizer and rotation, with a ghost piece and hard drop added on top.
 
-![Tetris-Preview](https://media.giphy.com/media/QvFb7MKlw0YIHaFeoI/giphy.gif)
+For original one that I have written manually by hand in C, do visit [tetris v1](https://github.com/occamist/tetris/tree/ae25cc05923464328a811e2291f46035dcf7b19c)
 
-### Dependencies
+> [!NOTE]
+> Grid lines use the block characters `▁` (U+2581) and `🭿` (U+1FB7F).
+> Terminals that draw block characters themselves line them up exactly with
+> the cell edges: GNOME Console/Terminal (VTE), kitty, WezTerm, foot, iTerm2.
+> Elsewhere they come from your font. If you see boxes or broken lines, run with `-nogrid`.
 
-- Clang (`do not ever try to use gcc`)
-- Make (`not so important`)
-- SDL2 (`dnf install SDL2-devel` or `apt-get install libsdl2-dev`)
+## Installation
 
-### Compile
+### Grab Binaries
 
-- `make run` (`PRESS space to start, use only arrow keys and space for hard drop, arrow key up rotates the piece`)
+You can find the binaries through GitHub [releases](https://github.com/occamist/tetris/releases/).
 
-### Background & Facts
+### Install Via Go
 
-Tetris was firstly coded in Pascal(computer), Turbo Pascal(computer), C(gameboy) and Assembly6052(arkades), the creator of tetris used to love watching shop windows of toy sellers in Russia, one day he saw "Pentominos Puzzle" and got inspired by its pieces to create a board game. Original primitive(prototype) tetris was created with green square brackets and dots and lines while the creator was working in ELORG(Elektronorgtechnica). "Tetris" in the game context means 4 "line" clear.
+```shell
+  go install github.com/occamist/tetris/v2/cmd/tetris@latest
+```
 
-- Game rights of Tetris were abused by Atari and Maxwell media corporations and the creator of Tetris didn't receive a single cent until 1996.
-- Atari and Maxwell media corporations are sued and functionally out of business.
-- Nintendo is the biggest supporter and biggest license paying consumer of Tetris up until today.
-- Tetris's catchy music is created from Russian folk music called "Korobeiniki"
-- “Tetris” is a combination of Greek and the creator’s favorite sport
-- Nintendo almost rejected Tetris for Game Boy because  Yamauchi(the CEO of Nintendo) found the game not super interesting, however the CEO asked to Shigeru Miyamoto(the designer of Mario, Zelda, Donkey Kong) about what he thinks. Miyamoto mentioned he enjoyed the game and when asked "what is enjoyable about it?", he said "Because your secretaries and accountants are playing it"
-- Tetris was the first video game played in outer space
+## Rules
 
-### Disclaimer
+```
+ ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁   NEXT
+▕                    ▏   ▁▁▁▁▁▁▁▁
+▕                    ▏  ▕  ██████▏
+▕        ██████      ▏  ▕  ██    ▏
+▕            ██      ▏   ▔▔▔▔▔▔▔▔
+▕                    ▏
+▕                    ▏  SCORE
+▕        ░░░░░░      ▏  000000
+▕    ████████░░      ▏
+▕        ██          ▏  LINES
+▕        ████        ▏  000
+▕          ██        ▏
+▕      ██████        ▏  LEVEL
+▕          ██        ▏  00
+▕          ██        ▏
+▕        ████        ▏  ?  help
+▕        ██          ▏
+▕      ██████        ▏
+▕      ██  ██        ▏
+▕        ████        ▏
+▕        ██          ▏
+ ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+```
 
-`All rights do belong to The Tetris Company founded by Alexey Pajitnov and Henk Rogers, I do not distribute or sell tetris without the permission of The Tetris Company`
-
-### Kind regards to Henk Rogers and Alexey Pajitnov(the genius of Legend Arcade Era) who is the creator of Tetris on June 6, 1984
-
-![Alexey-Pajitnov](https://github.com/mrwormhole/tetris/assets/22800416/460ae2ac-ee34-4c76-b22f-c2b1e55fa6fc)
-<br />
-![Henk Rogers](https://github.com/mrwormhole/tetris/assets/22800416/3e99639e-9187-4cbb-ac6d-02e5912a8ea5)
-<br />
-![alexey-Henk](https://github.com/mrwormhole/tetris/assets/22800416/f0a4cc95-1c42-4d5b-8f67-09aabbfa9f1a)
-<br />
-![Alexey-Henk](https://github.com/mrwormhole/tetris/assets/22800416/e248a438-4df4-43fd-afc4-e3ce6fbe61fc)
-<br />
-![old-russian-made-tetris](https://github.com/mrwormhole/tetris/assets/22800416/9182d77d-5d6d-45d1-84b5-45de314ce44c)
-![nintendo-tetris](https://github.com/mrwormhole/tetris/assets/22800416/1d03890f-3cf1-4407-bd11-5715810880e6)
-![tetris-prototype](https://github.com/mrwormhole/tetris/assets/22800416/a0de6b8f-8ad1-46a5-a46a-34c01160239c)
-
-
+- **Board:** 10 × 20. A new piece appears at the top centre. If it overlaps
+  the stack, or a piece locks partly above the top, the game is over.
+- **Gravity:** the NES frames-per-row table at 60 frames per second: 48 frames
+  at level 0, down to 6 at level 9, 2 from level 19 and 1 from level 29.
+- **Rotation:** the NES system. No wall kicks; I, S and Z have two states.
+- **Randomizer:** the NES rule. Roll one of eight; if that is the unused
+  eighth value or repeats the previous piece, roll once more among the seven.
+- **Entry delay:** 10–18 frames after a piece locks, longer the higher it locked.
+- **Line clear:** full rows are wiped from the centre outwards over 20 frames.
+- **Scoring:** 40 / 100 / 300 / 1200 × (level + 1) for 1 / 2 / 3 / 4 lines.
+  Only cleared lines score; dropping pieces gives no points.
+- **Levels:** the first level-up comes at `min(start×10+10, max(100, start×10−50))`
+  lines, then every 10 lines.
