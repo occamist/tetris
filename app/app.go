@@ -1,4 +1,4 @@
-package ui
+package app
 
 import (
 	"context"
@@ -6,7 +6,8 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 
-	"github.com/occamist/tetris/v2/internal/game"
+	"github.com/occamist/tetris/v2/game"
+	"github.com/occamist/tetris/v2/ui"
 )
 
 const (
@@ -18,9 +19,19 @@ const (
 	maxCatchUp = 5 * frame
 )
 
-// Run drives the game until the player quits or ctx is cancelled.
+type Options struct {
+	// NoGrid draws solid blocks without grid lines, for terminals or fonts
+	// that can't show the grid glyphs.
+	NoGrid bool
+}
+
 func Run(ctx context.Context, screen tcell.Screen, g *game.Game, opts Options) error {
-	u := New(screen, opts)
+	u := ui.New(screen, ui.Options{NoGrid: opts.NoGrid})
+	if g == nil {
+		seed := uint64(time.Now().UnixNano())
+		g := game.New(game.NewNESRandomizer(seed))
+		g.SetStartLevel(0)
+	}
 
 	events := make(chan tcell.Event, 64)
 	stop := make(chan struct{})
@@ -73,7 +84,6 @@ func Run(ctx context.Context, screen tcell.Screen, g *game.Game, opts Options) e
 			pending = min(pending+now.Sub(last), maxCatchUp)
 			last = now
 			if u.HelpOpen() {
-				// The game is frozen behind the help popup.
 				pending = 0
 				break
 			}

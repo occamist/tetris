@@ -1,12 +1,11 @@
-package ui
+package app
 
 import (
 	"github.com/gdamore/tcell/v2"
 
-	"github.com/occamist/tetris/v2/internal/game"
+	"github.com/occamist/tetris/v2/game"
 )
 
-// command is what a key press asks the program to do.
 type command int
 
 const (

@@ -3,7 +3,7 @@ package ui
 import (
 	"github.com/gdamore/tcell/v2"
 
-	"github.com/occamist/tetris/v2/internal/game"
+	"github.com/occamist/tetris/v2/game"
 )
 
 // pieceColors fill the blocks and lineColors draw the grid lines on them.

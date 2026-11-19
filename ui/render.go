@@ -1,5 +1,3 @@
-// Package ui draws the game in a terminal with tcell and turns key presses
-// into game actions.
 package ui
 
 import (
@@ -9,7 +7,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
 
-	"github.com/occamist/tetris/v2/internal/game"
+	"github.com/occamist/tetris/v2/game"
 )
 
 // Layout, in terminal cells.

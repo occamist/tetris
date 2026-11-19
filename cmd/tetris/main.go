@@ -8,25 +8,23 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"syscall"
-	"time"
 
 	"github.com/gdamore/tcell/v2"
 
-	"github.com/occamist/tetris/v2/internal/game"
-	"github.com/occamist/tetris/v2/internal/ui"
+	"github.com/occamist/tetris/v2/app"
 )
 
 func main() {
 	noGrid := flag.Bool("nogrid", false, "draw solid blocks without grid lines (for terminals that don't show underlines)")
 	flag.Parse()
 
-	if err := run(ui.Options{NoGrid: *noGrid}); err != nil {
+	if err := run(app.Options{NoGrid: *noGrid}); err != nil {
 		fmt.Fprintln(os.Stderr, "tetris:", err)
 		os.Exit(1)
 	}
 }
 
-func run(opts ui.Options) error {
+func run(opts app.Options) error {
 	screen, err := tcell.NewScreen()
 	if err != nil {
 		return err
@@ -53,9 +51,5 @@ func run(opts ui.Options) error {
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-
-	seed := uint64(time.Now().UnixNano())
-	g := game.New(game.NewNESRandomizer(seed))
-	g.SetStartLevel(0)
-	return ui.Run(ctx, screen, g, opts)
+	return app.Run(ctx, screen, nil, opts)
 }
