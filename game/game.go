@@ -32,9 +32,9 @@ type Randomizer interface {
 type Game struct {
 	rng Randomizer
 
-	phase  Phase
-	paused bool
-	Board  Board
+	Phase    Phase // The current phase in the game session.
+	IsPaused bool
+	Board    Board
 
 	piece    Piece
 	hasPiece bool // false while waiting out the entry delay
@@ -53,23 +53,23 @@ type Game struct {
 
 // New returns a game on the title screen that draws pieces from rng.
 func New(rng Randomizer) *Game {
-	return &Game{rng: rng, phase: PhaseStart}
+	return &Game{rng: rng, Phase: PhaseStart}
 }
 
 // SetStartLevel sets the level shown on the title screen, clamped to the
 // allowed range. It has no effect once a game is running.
 func (g *Game) SetStartLevel(level int) {
-	if g.phase == PhaseStart {
+	if g.Phase == PhaseStart {
 		g.StartLevel = max(0, min(MaxStartLevel, level))
 	}
 }
 
 // Tick advances the game by one frame.
 func (g *Game) Tick() {
-	if g.paused {
+	if g.IsPaused {
 		return
 	}
-	switch g.phase {
+	switch g.Phase {
 	case PhasePlay:
 		if !g.hasPiece {
 			g.entryTimer--
@@ -93,7 +93,7 @@ func (g *Game) Tick() {
 
 // Handle applies one player action.
 func (g *Game) Handle(a Action) {
-	switch g.phase {
+	switch g.Phase {
 	case PhaseStart:
 		switch a {
 		case ActionUp, ActionRight:
@@ -105,14 +105,14 @@ func (g *Game) Handle(a Action) {
 		}
 	case PhaseOver:
 		if a == ActionStart || a == ActionHardDrop {
-			g.phase = PhaseStart
+			g.Phase = PhaseStart
 		}
 	case PhasePlay, PhaseLineClear:
 		if a == ActionPause {
-			g.paused = !g.paused
+			g.IsPaused = !g.IsPaused
 			return
 		}
-		if g.paused || g.phase != PhasePlay || !g.hasPiece {
+		if g.IsPaused || g.Phase != PhasePlay || !g.hasPiece {
 			return
 		}
 		switch a {
@@ -140,9 +140,9 @@ func (g *Game) begin() {
 	g.Level = g.StartLevel
 	g.Lines = 0
 	g.Score = 0
-	g.paused = false
+	g.IsPaused = false
 	g.clearing = nil
-	g.phase = PhasePlay
+	g.Phase = PhasePlay
 	g.NextKind = g.rng.NextKind()
 	g.spawn()
 }
@@ -154,7 +154,7 @@ func (g *Game) spawn() {
 	g.hasPiece = true
 	g.gravityTimer = 0
 	if !g.Board.Fits(g.piece.Cells()) {
-		g.phase = PhaseOver
+		g.Phase = PhaseOver
 	}
 }
 
@@ -183,13 +183,13 @@ func (g *Game) fall() bool {
 func (g *Game) lock() {
 	g.hasPiece = false
 	if !g.Board.Place(g.piece) {
-		g.phase = PhaseOver
+		g.Phase = PhaseOver
 		return
 	}
 	if rows := g.Board.FullRows(); len(rows) > 0 {
 		g.clearing = rows
 		g.clearTimer = 0
-		g.phase = PhaseLineClear
+		g.Phase = PhaseLineClear
 		return
 	}
 	g.entryTimer = EntryDelay(g.piece.Row)
@@ -205,23 +205,16 @@ func (g *Game) finishClear() {
 	if g.Lines >= LinesForNextLevel(g.StartLevel, g.Level) {
 		g.Level++
 	}
-	g.phase = PhasePlay
+	g.Phase = PhasePlay
 	g.spawn()
 }
 
-// Phase returns the current phase.
-func (g *Game) Phase() Phase { return g.phase }
-
-// Paused reports whether the game is paused.
-func (g *Game) Paused() bool { return g.paused }
-
 // Piece returns the falling piece, and false if there is none right now.
 func (g *Game) Piece() (Piece, bool) {
-	return g.piece, g.hasPiece && g.phase == PhasePlay
+	return g.piece, g.hasPiece && g.Phase == PhasePlay
 }
 
-// Ghost returns where the falling piece would land, and false if there is no
-// falling piece.
+// Ghost returns where the falling piece would land, and false if there is no falling piece.
 func (g *Game) Ghost() (Piece, bool) {
 	p, ok := g.Piece()
 	if !ok {
@@ -236,7 +229,7 @@ func (g *Game) Ghost() (Piece, bool) {
 // Clearing returns the rows being wiped and how many column pairs have been
 // wiped so far, counting outwards from the centre (1 to Width/2).
 func (g *Game) Clearing() (rows []int, pairs int) {
-	if g.phase != PhaseLineClear {
+	if g.Phase != PhaseLineClear {
 		return nil, 0
 	}
 	step := LineClearFrames / (Width / 2)

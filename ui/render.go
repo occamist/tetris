@@ -78,15 +78,15 @@ func (u *UI) Draw(g *game.Game) {
 	switch {
 	case u.help:
 		u.drawHelp()
-	case g.Phase() == game.PhaseStart:
+	case g.Phase == game.PhaseStart:
 		u.drawTitle(g)
-	case g.Paused():
+	case g.IsPaused:
 		// Hide the board while paused so pausing can't be used to plan ahead.
 		u.centre(9, "PAUSED", styleTitle)
 		u.centre(11, "p to resume", styleText)
 	default:
 		u.drawBoard(g)
-		if g.Phase() == game.PhaseOver {
+		if g.Phase == game.PhaseOver {
 			u.drawGameOver(g)
 		}
 	}
@@ -122,7 +122,6 @@ type boxEdges struct {
 	tl, tr, bl, br           rune // corners; zero leaves them blank
 }
 
-// drawBox draws a border whose outer corners are (x0, y0) and (x1, y1).
 func (u *UI) drawBox(x0, y0, x1, y1 int) {
 	e := flushEdges
 	if u.look == lookMono {
@@ -200,7 +199,7 @@ func (u *UI) drawPanel(g *game.Game) {
 	// A 4x2-cell box: wide enough for every piece in its spawn orientation.
 	const boxW, boxH = 4*2 + 2, 2 + 2
 	u.drawBox(x, y+1, x+boxW-1, y+boxH)
-	if g.Phase() != game.PhaseStart && !g.Paused() {
+	if g.Phase != game.PhaseStart && !g.IsPaused {
 		next := game.NewPiece(g.NextKind)
 		style, glyph := u.blockStyle(next.Kind)
 		for _, p := range next.Cells() {
@@ -219,21 +218,18 @@ func (u *UI) drawPanel(g *game.Game) {
 	u.text(x, y+15, "?  help", styleBorder)
 }
 
-// helpLines lists the key bindings shown in the help popup.
-var helpLines = []string{
-	"← →  move",
-	"↑ x  rotate ↻",
-	"z    rotate ↺",
-	"↓    soft drop",
-	"spc  hard drop",
-	"p    pause",
-	"g    ghost",
-	"q    quit",
-}
-
-// drawHelp shows the key bindings in place of the board. The game is frozen
-// while it is open, so hiding the board gives no advantage.
 func (u *UI) drawHelp() {
+	var helpLines = []string{
+		"← →  move",
+		"↑ x  rotate ↻",
+		"z    rotate ↺",
+		"↓    soft drop",
+		"spc  hard drop",
+		"p    pause",
+		"g    ghost",
+		"q    quit",
+	}
+
 	u.centre(3, "HELP", styleTitle)
 	// Centre the block as a whole so the key column stays aligned.
 	width := 0

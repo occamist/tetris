@@ -206,7 +206,7 @@ func TestDrawGameOver(t *testing.T) {
 	g.Handle(game.ActionStart)
 	// Stack vertical I pieces in the middle column until the game ends.
 	for range 20 {
-		if g.Phase() == game.PhaseOver {
+		if g.Phase == game.PhaseOver {
 			break
 		}
 		g.Handle(game.ActionUp)
@@ -215,7 +215,7 @@ func TestDrawGameOver(t *testing.T) {
 			g.Tick()
 		}
 	}
-	if g.Phase() != game.PhaseOver {
+	if g.Phase != game.PhaseOver {
 		t.Fatal("could not reach game over")
 	}
 	New(s, Options{}).Draw(g)

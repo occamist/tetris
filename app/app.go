@@ -29,7 +29,7 @@ func Run(ctx context.Context, screen tcell.Screen, g *game.Game, opts Options) e
 	u := ui.New(screen, ui.Options{NoGrid: opts.NoGrid})
 	if g == nil {
 		seed := uint64(time.Now().UnixNano())
-		g := game.New(game.NewNESRandomizer(seed))
+		g = game.New(game.NewNESRandomizer(seed))
 		g.SetStartLevel(0)
 	}
 

@@ -107,8 +107,8 @@ func TestRunQuitsOnKey(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("Run did not return after q")
 	}
-	if g.Phase() != game.PhasePlay {
-		t.Errorf("phase = %v, want PhasePlay after enter", g.Phase())
+	if g.Phase != game.PhasePlay {
+		t.Errorf("phase = %v, want PhasePlay after enter", g.Phase)
 	}
 }
 

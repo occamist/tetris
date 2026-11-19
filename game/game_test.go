@@ -38,15 +38,15 @@ func mustPiece(t *testing.T, g *Game) Piece {
 	t.Helper()
 	p, ok := g.Piece()
 	if !ok {
-		t.Fatalf("no falling piece (phase %v)", g.Phase())
+		t.Fatalf("no falling piece (phase %v)", g.Phase)
 	}
 	return p
 }
 
 func TestTitleScreenLevelSelect(t *testing.T) {
 	g := newGame(T)
-	if g.Phase() != PhaseStart {
-		t.Fatalf("new game phase = %v, want PhaseStart", g.Phase())
+	if g.Phase != PhaseStart {
+		t.Fatalf("new game phase = %v, want PhaseStart", g.Phase)
 	}
 	g.Handle(ActionDown)
 	if g.StartLevel != 0 {
@@ -62,8 +62,8 @@ func TestTitleScreenLevelSelect(t *testing.T) {
 		t.Errorf("start level = %d, want clamp to %d", g.StartLevel, MaxStartLevel)
 	}
 	g.Handle(ActionStart)
-	if g.Phase() != PhasePlay || g.Level != MaxStartLevel {
-		t.Errorf("after start: phase %v level %d", g.Phase(), g.Level)
+	if g.Phase != PhasePlay || g.Level != MaxStartLevel {
+		t.Errorf("after start: phase %v level %d", g.Phase, g.Level)
 	}
 	g.SetStartLevel(0)
 	if g.StartLevel != MaxStartLevel {
@@ -191,8 +191,8 @@ func TestLineClear(t *testing.T) {
 	fillRow(&g.Board, 19, J, 3, 4, 5, 6) // gap exactly where a flat I lands
 	g.Handle(ActionHardDrop)
 
-	if g.Phase() != PhaseLineClear {
-		t.Fatalf("phase = %v, want PhaseLineClear", g.Phase())
+	if g.Phase != PhaseLineClear {
+		t.Fatalf("phase = %v, want PhaseLineClear", g.Phase)
 	}
 	rows, pairs := g.Clearing()
 	if !slices.Equal(rows, []int{19}) || pairs != 1 {
@@ -208,8 +208,8 @@ func TestLineClear(t *testing.T) {
 	}
 	g.Tick()
 
-	if g.Phase() != PhasePlay {
-		t.Fatalf("phase after animation = %v, want PhasePlay", g.Phase())
+	if g.Phase != PhasePlay {
+		t.Fatalf("phase after animation = %v, want PhasePlay", g.Phase)
 	}
 	if g.Lines != 1 {
 		t.Errorf("lines = %d, want 1", g.Lines)
@@ -257,15 +257,15 @@ func TestGameOverWhenSpawnBlocked(t *testing.T) {
 	g.Board[0][6] = Z // clear of the falling O, but where T spawns
 	g.Handle(ActionHardDrop)
 	ticks(g, EntryDelay(18))
-	if g.Phase() != PhaseOver {
-		t.Fatalf("phase = %v, want PhaseOver", g.Phase())
+	if g.Phase != PhaseOver {
+		t.Fatalf("phase = %v, want PhaseOver", g.Phase)
 	}
 	if _, ok := g.Piece(); ok {
 		t.Error("Piece() reports a falling piece after game over")
 	}
 	g.Handle(ActionStart)
-	if g.Phase() != PhaseStart {
-		t.Errorf("phase after confirm = %v, want PhaseStart", g.Phase())
+	if g.Phase != PhaseStart {
+		t.Errorf("phase after confirm = %v, want PhaseStart", g.Phase)
 	}
 }
 
@@ -274,15 +274,15 @@ func TestGameOverWhenLockingAboveTop(t *testing.T) {
 	g.Board[2][5] = Z
 	g.Handle(ActionRotateCW) // vertical I: rows -2..1, resting on the Z
 	g.Handle(ActionHardDrop)
-	if g.Phase() != PhaseOver {
-		t.Fatalf("phase = %v, want PhaseOver", g.Phase())
+	if g.Phase != PhaseOver {
+		t.Fatalf("phase = %v, want PhaseOver", g.Phase)
 	}
 }
 
 func TestPauseFreezesGame(t *testing.T) {
 	g := started(0, T)
 	g.Handle(ActionPause)
-	if !g.Paused() {
+	if !g.IsPaused {
 		t.Fatal("not paused")
 	}
 	ticks(g, 500)
@@ -302,7 +302,7 @@ func TestRestartResetsState(t *testing.T) {
 	g := started(3, O)
 	g.Score, g.Lines, g.Level = 999, 40, 7
 	g.Board[19][0] = J
-	g.phase = PhaseOver
+	g.Phase = PhaseOver
 	g.Handle(ActionStart) // to title
 	g.Handle(ActionStart) // new game
 	if g.Score != 0 || g.Lines != 0 || g.Level != 3 || g.Board != (Board{}) {
